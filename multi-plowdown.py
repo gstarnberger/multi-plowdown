@@ -119,7 +119,12 @@ def downloader(regexp, urls):
     '''Download from specified URLs'''
 
     interfaces = NetworkHelper.get_filtered_interfaces(regexp)
-    interfaces.remove('lo')
+
+    try:
+        interfaces.remove('lo')
+    except:
+        pass
+
     random.shuffle(interfaces)
     runners = []
 
