@@ -3,6 +3,7 @@
 import sys
 import threading
 import subprocess
+import random
 
 # Just copy this from a Python 2.7 installation if you use an older version
 import argparse
@@ -90,28 +91,67 @@ class PlowdownRunner(threading.Thread):
             sys.stdout.write('Interface %s downloading %s\n' % (self.interface, url))
 
             try:
-                subprocess.call([PLOWDOWN, '-i', self.interface, url], stderr=open('/dev/null', 'w'))
+                subprocess_check_output([PLOWDOWN, '-i', self.interface, url], stderr=subprocess.STDOUT)
                 sys.stdout.write('COMPLETE: Interface %s downloading %s\n' % (self.interface, url))
-            except subprocess.CalledProcessError:
-                sys.stdout.write('FAILURE: Interface %s downloading %s\n' % (self.interface, url))
+            except subprocess.CalledProcessError as e:
+                sys.stdout.write('FAILURE: Interface %s downloading %s (%s)\n' % (self.interface, url, e.output.split('\n')[-2]))
+            finally:
+                sys.stdout.flush()
 
+
+def subprocess_check_output(*popenargs, **kwargs):
+    '''subprocess.check_output from Python 2.7 for compatibility with older
+    Python versions'''
+
+    if 'stdout' in kwargs:
+        raise ValueError('stdout argument not allowed, it will be overridden.')
+    process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+    output, unused_err = process.communicate()
+    retcode = process.poll()
+    if retcode:
+        cmd = kwargs.get("args")
+        if cmd is None:
+            cmd = popenargs[0]
+        raise subprocess.CalledProcessError(retcode, cmd, output=output)
+    return output
 
 def downloader(regexp, urls):
     '''Download from specified URLs'''
 
     interfaces = NetworkHelper.get_filtered_interfaces(regexp)
-    producer = URLProducer(urls)
-
+    interfaces.remove('lo')
+    random.shuffle(interfaces)
     runners = []
 
-    for interface in interfaces:
-        runner = PlowdownRunner(producer, interface)
-        runners.append(runner)
-        runner.start()
+    for (module, urlset) in identify_modules(urls).iteritems():
+        producer = URLProducer(urlset)
 
-    for runners in runners:
+        for interface in interfaces:
+            runner = PlowdownRunner(producer, interface)
+            runners.append(runner)
+            runner.start()
+
+    for runner in runners:
         runner.join()
 
+def identify_module(url):
+    '''Identify module responsible for a given URL'''
+
+    try:
+        return subprocess_check_output([PLOWDOWN, '--get-module', url], stderr=open('/dev/null', 'w')).rstrip()
+    except subprocess.CalledProcessError:
+        return None
+
+def identify_modules(urls):
+    '''Identify modules responsible for multiple URLs'''
+
+    result = {}
+
+    for url in urls:
+        module = identify_module(url)
+        result[module] = result.get(module, []) + [url]
+
+    return result
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Multi-interface Plowdown starter')
