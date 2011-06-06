@@ -1,0 +1,33 @@
+multi-plowdown.py
+-----------------
+
+multi-plowdown.py is a plowdown (http://code.google.com/p/plowshare/) launcher
+for hosts where multiple IP interfaces are available for download. When starting
+a download one thread per interface is launched and download URLs are
+distributed to those threads. This allows you to considerably decrease the
+waiting time, e.g., if you have 6 interfaces and you want to download 12 files
+from a filehoster, you effectively only have to wait once in the delay loop of
+the filehoster.
+
+usage: multi-plowdown.py [-h] regexp urls [urls ...]
+
+regexp: Regexp specifying the used network interfaces. E.g., if you are on a
+Linux virtual server and want to use all available venet0:0, venet0:1, venet0:2,
+etc. interfaces, you would use '^venet0:.*' as regexp.
+
+urls: List of URLs to download. If you want to store the URLs in a file instead
+of giving them on the command line use xargs(1) for this.
+
+multi-plowdown.py currently requires the 'argparse' module from a Python 2.7
+installation. However, if you use an older Python version you can just copy
+argparse.py from a newer Python installation. In addition, the get_interfaces()
+method used to retrieve the available interfaces currently only works on Linux.
+If you want support for other systems such as *BSD I'm happily accepting
+patches.
+
+license: Some code has been copied from
+http://code.activestate.com/recipes/439093-get-names-of-all-up-network-interfaces-linux-only/
+- this code is under the copyright of the respective authors. The remainder of
+the code written by me can be considered public domain.
+
+author: Guenther Starnberger <guenther AT starnberger DOT name>
