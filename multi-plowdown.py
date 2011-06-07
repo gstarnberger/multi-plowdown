@@ -115,6 +115,7 @@ def subprocess_check_output(*popenargs, **kwargs):
         raise subprocess.CalledProcessError(retcode, cmd, output=output)
     return output
 
+
 def downloader(regexp, urls):
     '''Download from specified URLs'''
 
@@ -139,6 +140,7 @@ def downloader(regexp, urls):
     for runner in runners:
         runner.join()
 
+
 def identify_module(url):
     '''Identify module responsible for a given URL'''
 
@@ -146,6 +148,7 @@ def identify_module(url):
         return subprocess_check_output([PLOWDOWN, '--get-module', url], stderr=open('/dev/null', 'w')).rstrip()
     except subprocess.CalledProcessError:
         return None
+
 
 def identify_modules(urls):
     '''Identify modules responsible for multiple URLs'''
@@ -157,6 +160,7 @@ def identify_modules(urls):
         result[module] = result.get(module, []) + [url]
 
     return result
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Multi-interface Plowdown starter')
